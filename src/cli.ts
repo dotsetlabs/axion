@@ -134,7 +134,7 @@ program
                     // Auto-link
                     await saveCloudConfig(process.cwd(), {
                         projectId: project.id,
-                        apiUrl: process.env.AXION_API_URL || 'https://api.dotsetlabs.com/axion',
+                        apiUrl: process.env.AXION_API_URL || 'https://api.dotsetlabs.com',
                         linkedAt: new Date().toISOString(),
                     });
 
@@ -1021,7 +1021,7 @@ program
             // Save cloud config
             await saveCloudConfig(process.cwd(), {
                 projectId,
-                apiUrl: process.env.AXION_API_URL || 'https://api.dotsetlabs.com/axion',
+                apiUrl: process.env.AXION_API_URL || 'https://api.dotsetlabs.com',
                 linkedAt: new Date().toISOString(),
             });
 

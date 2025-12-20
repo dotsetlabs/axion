@@ -147,7 +147,7 @@ export async function getCurrentUser(): Promise<User> {
  */
 export async function getApiUrl(): Promise<string> {
     const creds = await loadCredentials();
-    return creds?.apiUrl ?? 'https://api.dotsetlabs.com/axion';
+    return creds?.apiUrl ?? 'https://api.dotsetlabs.com';
 }
 
 /**

@@ -28,7 +28,7 @@ import type {
 } from './types.js';
 
 /** Default API URL - set to local dev server, update for production */
-const DEFAULT_API_URL = process.env.AXION_API_URL ?? 'https://api.dotsetlabs.com/axion';
+const DEFAULT_API_URL = process.env.AXION_API_URL ?? 'https://api.dotsetlabs.com';
 
 /**
  * API client configuration
