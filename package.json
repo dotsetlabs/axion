@@ -1,0 +1,81 @@
+{
+  "name": "@dotsetlabs/axion",
+  "version": "1.0.0",
+  "description": "The Zero-Disk Secret Plane. Secure secrets management for developers.",
+  "type": "module",
+  "main": "dist/cli.js",
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js"
+    },
+    "./crypto": {
+      "types": "./dist/core/crypto.d.ts",
+      "import": "./dist/core/crypto.js"
+    },
+    "./manifest": {
+      "types": "./dist/core/manifest.d.ts",
+      "import": "./dist/core/manifest.js"
+    },
+    "./injector": {
+      "types": "./dist/core/injector.d.ts",
+      "import": "./dist/core/injector.js"
+    }
+  },
+  "bin": {
+    "axn": "./bin/axn.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "bin",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "environment",
+    "env",
+    "dotenv",
+    "cli",
+    "secrets",
+    "configuration",
+    "microservices",
+    "encryption",
+    "security"
+  ],
+  "author": "dotset labs <hello@dotsetlabs.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dotsetlabs/axion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dotsetlabs/axion/issues"
+  },
+  "homepage": "https://dotsetlabs.com/axion",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "argon2": "^0.44.0",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
