@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createClient } from '../src/cloud/client.js';
+import { createClient } from '../../src/cloud/client.js';
 
 // Mock internal dependencies
-vi.mock('../src/cloud/auth.js', () => ({
+vi.mock('../../src/cloud/auth.js', () => ({
     getAccessToken: vi.fn(() => Promise.resolve('mock-token')),
     saveCredentials: vi.fn(),
     getCredentials: vi.fn(),
 }));
 
-vi.mock('../src/core/metadata.js', () => ({
+vi.mock('../../src/core/metadata.js', () => ({
     getDeviceMetadata: vi.fn(() => Promise.resolve({
         os: 'mac',
         version: '1.0.0',

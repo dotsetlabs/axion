@@ -1,16 +1,16 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ManifestManager } from '../src/core/manifest';
-import { cloudClient } from '../src/cloud/client';
-import { loadCloudConfig } from '../src/cloud/auth';
-import { encrypt, serializeEncrypted, generateProjectKey } from '../src/core/crypto';
+import { ManifestManager } from '../../src/core/manifest';
+import { cloudClient } from '../../src/cloud/client';
+import { loadCloudConfig } from '../../src/cloud/auth';
+import { encrypt, serializeEncrypted, generateProjectKey } from '../../src/core/crypto';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync, rmSync } from 'node:fs';
 
 // Mock dependencies
-vi.mock('../src/cloud/client');
-vi.mock('../src/cloud/auth');
+vi.mock('../../src/cloud/client');
+vi.mock('../../src/cloud/auth');
 
 const TEST_DIR = '.test-axion-sync';
 

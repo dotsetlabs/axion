@@ -1,6 +1,6 @@
 {
   "name": "@dotsetlabs/axion",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The Zero-Disk Secret Plane. Secure secrets management for developers.",
   "type": "module",
   "main": "dist/cli.js",
@@ -40,6 +40,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "npm test && npm run test:integration",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
@@ -74,6 +76,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.2",
+    "execa": "^8.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

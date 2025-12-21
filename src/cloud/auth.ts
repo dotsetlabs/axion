@@ -14,6 +14,7 @@ import { readFile, writeFile, mkdir, unlink, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { AuthTokens, User, CloudConfig } from './types.js';
+import { createClient } from './client.js';
 
 /** Directory for global Axion config */
 const CONFIG_DIR = join(homedir(), '.axion');
@@ -98,27 +99,46 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 /**
- * Gets the current access token if valid
- * @throws Error if not authenticated or token expired
+ * Gets the current access token, refreshing automatically if needed
+ * @throws Error if not authenticated or refresh fails
  */
 export async function getAccessToken(): Promise<string> {
-    // 1. Check Service Token
+    // 1. Check Service Token (always valid, no refresh needed)
     if (process.env.AXION_TOKEN) {
         return process.env.AXION_TOKEN;
     }
 
-    // 2. Check Local Credentials
+    // 2. Load credentials
     const creds = await loadCredentials();
     if (!creds) {
         throw new Error('Not logged in. Run "axn login" first.');
     }
 
     const now = Math.floor(Date.now() / 1000);
-    if (creds.tokens.expiresAt <= now) {
-        throw new Error('Session expired. Run "axn login" to reauthenticate.');
+    const buffer = 300; // 5 minute buffer before expiry
+
+    // 3. Token still valid with buffer? Return it
+    if (creds.tokens.expiresAt > now + buffer) {
+        return creds.tokens.accessToken;
     }
 
-    return creds.tokens.accessToken;
+    // 4. Try to refresh using refresh token
+    try {
+        const client = createClient({ apiUrl: creds.apiUrl });
+        const newTokens = await client.refreshTokens(creds.tokens.refreshToken);
+
+        // Save refreshed credentials
+        await saveCredentials(creds.user, {
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken,
+            expiresAt: newTokens.expiresAt,
+        }, creds.apiUrl);
+
+        return newTokens.accessToken;
+    } catch {
+        // Refresh failed (expired or revoked)
+        throw new Error('Session expired. Run "axn login" to reauthenticate.');
+    }
 }
 
 /**

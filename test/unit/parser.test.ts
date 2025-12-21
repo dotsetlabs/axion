@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEnvFile, formatEnvFile, isValidVariableName } from '../src/core/parser.js';
+import { parseEnvFile, formatEnvFile, isValidVariableName } from '../../src/core/parser.js';
 
 describe('Parser Module', () => {
     describe('parseEnvFile', () => {

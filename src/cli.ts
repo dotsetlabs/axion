@@ -123,7 +123,15 @@ program
             if (options.cloud) {
                 if (!(await isAuthenticated())) {
                     console.log();
-                    console.log(colors.yellow('⚠️  Not logged in. Run "axn login" first to create cloud project.'));
+                    console.log(colors.red('✗ Cannot create cloud project: Not logged in.'));
+                    console.log();
+                    console.log('  To use the --cloud flag, you must first authenticate:');
+                    console.log(`    ${colors.cyan('axn login')}`);
+                    console.log();
+                    console.log('  Then re-initialize with cloud support:');
+                    console.log(`    ${colors.cyan('rm -rf .axion && axn init --cloud --name ' + (options.name || basename(process.cwd())))}`);
+                    console.log();
+                    error('Cloud project creation requires authentication. Run "axn login" first.');
                 } else {
                     const projectName = options.name || basename(process.cwd());
                     const fingerprint = await manifest.getFingerprint();

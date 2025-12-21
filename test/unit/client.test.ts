@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { createClient } from '../src/cloud/client.js';
+import { createClient } from '../../src/cloud/client.js';
 
 /**
  * Client Integration Tests
@@ -34,6 +34,7 @@ describe('Axion Cloud Client', () => {
             expect(typeof client.listTokens).toBe('function');
             expect(typeof client.revokeToken).toBe('function');
             expect(typeof client.exportSecrets).toBe('function');
+            expect(typeof client.refreshTokens).toBe('function');
         });
 
         it('should create client with custom API URL', () => {

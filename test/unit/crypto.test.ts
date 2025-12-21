@@ -7,7 +7,7 @@ import {
     serializeEncrypted,
     deserializeEncrypted,
     ENCRYPTION_VERSION
-} from '../src/core/crypto.js';
+} from '../../src/core/crypto.js';
 
 describe('Crypto Module', () => {
     let key: string;

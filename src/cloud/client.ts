@@ -25,6 +25,7 @@ import type {
     CloudManifestHistory,
     DeviceCodeResponse,
     DevicePollResponse,
+    RefreshResponse,
 } from './types.js';
 
 /** Default API URL - set to local dev server, update for production */
@@ -141,6 +142,14 @@ export function createClient(config: ClientConfig = {}) {
             }
             await saveCredentials(response.user, response.tokens, apiUrl);
             return response.user;
+        },
+
+        /**
+         * Refreshes tokens using a valid refresh token
+         * Returns new access and refresh tokens (sliding window)
+         */
+        async refreshTokens(refreshToken: string): Promise<RefreshResponse> {
+            return publicRequest<RefreshResponse>('POST', '/auth/refresh', { refreshToken });
         },
 
         /**

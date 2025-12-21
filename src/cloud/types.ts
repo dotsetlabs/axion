@@ -144,6 +144,15 @@ export interface DevicePollResponse {
 }
 
 /**
+ * Token refresh response
+ */
+export interface RefreshResponse {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: number;
+}
+
+/**
  * Sync request payload
  */
 export interface SyncRequest {

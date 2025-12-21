@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadConfig, isProtected, validateSecret } from '../src/core/config.js';
+import { loadConfig, isProtected, validateSecret } from '../../src/core/config.js';
 import { writeFile, rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

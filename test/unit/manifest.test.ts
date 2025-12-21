@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ManifestManager, GLOBAL_SERVICE } from '../src/core/manifest.js';
+import { ManifestManager, GLOBAL_SERVICE } from '../../src/core/manifest.js';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdtemp, rm } from 'node:fs/promises';

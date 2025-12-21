@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-12-20
+
+### Added
+
+- **Automatic Token Refresh**: Access tokens now refresh automatically when within 5 minutes of expiry, reducing login prompts
+- **Integration Test Suite**: Comprehensive end-to-end tests for all CLI commands using `execa`
+- **CI/CD Workflow**: GitHub Actions workflow runs tests on push to `main`
+- **Improved Error Messages**: Better guidance when using `--cloud` flag without authentication
+
+### Changed
+
+- Reorganized test directory: `test/unit/` for unit tests, `test/integration/` for integration tests
+- Updated vitest configs for separate unit and integration test runs
+
+### Developer Experience
+
+- New commands: `npm run test:integration`, `npm run test:all`
+- 104+ tests total (86 unit, 18 integration)
+
+---
+
 ## [1.0.0] - 2025-12-20
 
 ### Initial Release
