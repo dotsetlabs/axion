@@ -16,10 +16,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
       
-      - name: Install dependencies
-        run: npm ci
+      # Workaround for npm optional dependency bug with rollup native modules
+      # See: https://github.com/npm/cli/issues/4828
+      - name: Clean install dependencies
+        run: |
+          rm -f package-lock.json
+          npm install
       
       - name: Build
         run: npm run build
@@ -29,3 +32,4 @@ jobs:
       
       - name: Run integration tests
         run: npm run test:integration
+
