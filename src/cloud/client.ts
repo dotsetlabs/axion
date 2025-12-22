@@ -156,7 +156,7 @@ export function createClient(config: ClientConfig = {}) {
          * Creates a new project in the cloud
          */
         async createProject(name: string, keyFingerprint?: string): Promise<{ id: string; name: string }> {
-            return request<{ id: string; name: string }>('POST', '/projects', { name, keyFingerprint });
+            return request<{ id: string; name: string }>('POST', '/axion/projects', { name, keyFingerprint });
         },
 
         /**
@@ -164,7 +164,7 @@ export function createClient(config: ClientConfig = {}) {
          * Returns a session token if access is granted (JIT)
          */
         async pulse(projectId: string): Promise<string> {
-            const response = await request<{ token: string }>('POST', `/projects/${projectId}/pulse`);
+            const response = await request<{ token: string }>('POST', `/axion/projects/${projectId}/pulse`);
             return response.token;
         },
 
@@ -172,7 +172,7 @@ export function createClient(config: ClientConfig = {}) {
          * Checks if user has access to a project
          */
         async checkAccess(projectId: string): Promise<AccessCheckResult> {
-            return request<AccessCheckResult>('GET', `/projects/${projectId}/access`);
+            return request<AccessCheckResult>('GET', `/axion/projects/${projectId}/access`);
         },
 
         /**
@@ -181,7 +181,7 @@ export function createClient(config: ClientConfig = {}) {
         async fetchManifest(projectId: string): Promise<CloudManifest> {
             const response = await request<SyncResponse>(
                 'GET',
-                `/projects/${projectId}/manifest`
+                `/axion/projects/${projectId}/manifest`
             );
             return response.manifest;
         },
@@ -196,7 +196,7 @@ export function createClient(config: ClientConfig = {}) {
         ): Promise<CloudManifest> {
             const response = await request<SyncResponse>(
                 'PUT',
-                `/projects/${projectId}/manifest`,
+                `/axion/projects/${projectId}/manifest`,
                 { projectId, encryptedData, keyFingerprint } as SyncRequest
             );
             return response.manifest;
@@ -213,42 +213,42 @@ export function createClient(config: ClientConfig = {}) {
          * Fetches audit logs for the project
          */
         async fetchAuditLogs(projectId: string): Promise<AuditLogEntry[]> {
-            return request<AuditLogEntry[]>('GET', `/projects/${projectId}/audit`);
+            return request<AuditLogEntry[]>('GET', `/axion/projects/${projectId}/audit`);
         },
 
         /**
          * Fetches version history
          */
         async fetchHistory(projectId: string): Promise<CloudManifestHistory[]> {
-            return request<CloudManifestHistory[]>('GET', `/projects/${projectId}/history`);
+            return request<CloudManifestHistory[]>('GET', `/axion/projects/${projectId}/history`);
         },
 
         /**
          * Rolls back to a specific version
          */
         async rollback(projectId: string, version: number): Promise<void> {
-            await request<{ success: boolean; newVersion: number }>('POST', `/projects/${projectId}/rollback`, { version });
+            await request<{ success: boolean; newVersion: number }>('POST', `/axion/projects/${projectId}/rollback`, { version });
         },
 
         /**
          * Gets project members
          */
         async getMembers(projectId: string): Promise<{ id: string; userId: string; userEmail: string; role: string; revokedAt: string | null }[]> {
-            return request('GET', `/projects/${projectId}/members`);
+            return request('GET', `/axion/projects/${projectId}/members`);
         },
 
         /**
          * Adds a member to a project
          */
         async addMember(projectId: string, email: string, role: string = 'member'): Promise<{ id: string; userId: string; userEmail: string; role: string }> {
-            return request('POST', `/projects/${projectId}/members`, { email, role });
+            return request('POST', `/axion/projects/${projectId}/members`, { email, role });
         },
 
         /**
          * Revokes a member's access
          */
         async revokeMember(projectId: string, userId: string): Promise<void> {
-            await request('PATCH', `/projects/${projectId}/members/${userId}/revoke`);
+            await request('PATCH', `/axion/projects/${projectId}/members/${userId}/revoke`);
         },
 
         // --- Service Tokens ---
@@ -262,7 +262,7 @@ export function createClient(config: ClientConfig = {}) {
             scopes: string[] = ['read'],
             expiresInDays?: number
         ): Promise<{ id: string; name: string; token: string; tokenPrefix: string; scopes: string[]; expiresAt: string | null }> {
-            return request('POST', `/projects/${projectId}/tokens`, { name, scopes, expiresInDays });
+            return request('POST', `/axion/projects/${projectId}/tokens`, { name, scopes, expiresInDays });
         },
 
         /**
@@ -280,14 +280,14 @@ export function createClient(config: ClientConfig = {}) {
             createdAt: string;
             isActive: boolean;
         }[]> {
-            return request('GET', `/projects/${projectId}/tokens`);
+            return request('GET', `/axion/projects/${projectId}/tokens`);
         },
 
         /**
          * Revokes a service token
          */
         async revokeToken(projectId: string, tokenId: string): Promise<void> {
-            await request('DELETE', `/projects/${projectId}/tokens/${tokenId}`);
+            await request('DELETE', `/axion/projects/${projectId}/tokens/${tokenId}`);
         },
 
         /**
@@ -295,7 +295,7 @@ export function createClient(config: ClientConfig = {}) {
          */
         async exportSecrets(projectId: string, scope?: string): Promise<{ secrets: Record<string, string> }> {
             const params = scope ? `?scope=${scope}` : '';
-            return request('GET', `/projects/${projectId}/secrets${params}`);
+            return request('GET', `/axion/projects/${projectId}/secrets${params}`);
         },
 
         // --- Project Management ---
@@ -313,14 +313,14 @@ export function createClient(config: ClientConfig = {}) {
                 manifests: number;
             };
         }> {
-            return request('DELETE', `/projects/${projectId}`);
+            return request('DELETE', `/axion/projects/${projectId}`);
         },
 
         /**
          * Updates a project (e.g. name or fingerprint)
          */
         async updateProject(projectId: string, updates: { name?: string; keyFingerprint?: string }): Promise<void> {
-            return request('PATCH', `/projects/${projectId}`, updates);
+            return request('PATCH', `/axion/projects/${projectId}`, updates);
         },
 
         /**
@@ -334,7 +334,7 @@ export function createClient(config: ClientConfig = {}) {
             createdAt: string;
             updatedAt: string;
         }[]> {
-            return request('GET', '/projects');
+            return request('GET', '/axion/projects');
         }
     };
 }

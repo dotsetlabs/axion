@@ -268,10 +268,45 @@ validation:
 
 | Plan | Price | Includes |
 |:-----|:------|:---------|
-| **Free** | $0 | 1 project, 1 user |
-| **Pro** | $12/mo or $99/yr | Unlimited projects, 5 users per project, audit logs |
-| **Enterprise** | $29/mo or $249/yr | Unlimited projects, unlimited team members |
+| **Free** | $0 | 2 projects, 2 users per project, 7-day history |
+| **Pro** | $8/mo or $75/yr | Unlimited projects, 10 users per project, 90-day history |
+| **Business** | $25/mo or $240/yr | Unlimited projects, 50 users per project, 1-year history |
+
+### Feature Comparison
+
+| Feature | Free | Pro | Business |
+|:--------|:----:|:---:|:--------:|
+| **Projects** | 2 | Unlimited | Unlimited |
+| **Users per Project** | 2 | 10 | 50 |
+| **History** | 7 days | 90 days | 1 year |
+| **Key Rotation** | — | ✓ | ✓ |
+| **Audit Logs** | — | ✓ | ✓ |
+| **Webhooks** | — | — | ✓ |
+| **Support** | Community | Email | Priority email |
+
+## Gluon Integration
+
+Monitor for secret leaks at runtime with [@dotsetlabs/gluon](https://github.com/dotsetlabs/gluon):
+
+```bash
+npm install -g @dotsetlabs/gluon
+
+# Run with Gluon monitoring enabled
+axn run --with-gluon -- npm start
+```
+
+> **Axion protects your secrets at rest. Gluon watches them in motion.**
+
+| Product | Role |
+|:--------|:-----|
+| **Axion** | Encrypts and injects secrets into process.env |
+| **Gluon** | Monitors stdout/stderr for accidental leaks |
 
 ## License
 
 MIT
+
+## Related Projects
+
+- [@dotsetlabs/gluon](https://github.com/dotsetlabs/gluon) — Runtime Security Telemetry
+- [dotset labs](https://dotsetlabs.com) — Developer tools for security, performance, and DX

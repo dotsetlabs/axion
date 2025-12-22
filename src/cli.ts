@@ -406,6 +406,7 @@ program
     .description('Run a command with injected environment variables')
     .argument('<command...>', 'Command and arguments to run')
     .option('--scope <env>', 'Environment scope (development, staging, production)', 'development')
+    .option('--with-gluon', 'Enable Gluon runtime security monitoring')
     .allowUnknownOption()
     .action(async (commandArgs: string[], options) => {
         try {
@@ -420,10 +421,34 @@ program
             const vars = await manifest.getVariables(service, scope as any);
 
             // Separate the command from its arguments
-            const [command, ...args] = commandArgs;
+            let [command, ...args] = commandArgs;
 
             if (!command) {
                 error('No command specified. Usage: axn run -- <command>');
+            }
+
+            // If --with-gluon is enabled, wrap command with gln run
+            if (options.withGluon) {
+                // Check if gluon is installed
+                const { execSync } = await import('node:child_process');
+                let gluonAvailable = false;
+                try {
+                    execSync('gln --version', { stdio: 'ignore' });
+                    gluonAvailable = true;
+                } catch {
+                    // gluon not installed
+                }
+
+                if (gluonAvailable) {
+                    info('Gluon runtime monitoring enabled');
+                    // Wrap: gln run -- <original command>
+                    args = ['run', '--', command, ...args];
+                    command = 'gln';
+                } else {
+                    console.log(colors.yellow('⚠ Gluon not installed. Install with: npm install -g @dotsetlabs/gluon'));
+                    console.log(colors.dim('  Continuing without Gluon monitoring...'));
+                    console.log();
+                }
             }
 
             // Run the command with injected environment
