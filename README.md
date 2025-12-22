@@ -82,7 +82,7 @@ Axion fetches encrypted secrets, decrypts them in memory, and spawns your proces
 
 2. **Set the environment variable** in your cloud provider:
    ```
-   AXION_TOKEN=vpt_xxxxxxxxxxxxx
+   AXION_TOKEN=axn_xxxxxxxxxxxxx
    ```
 
 3. **Update your start command**:
