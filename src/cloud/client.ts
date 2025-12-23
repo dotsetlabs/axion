@@ -32,6 +32,23 @@ import type {
 const DEFAULT_API_URL = process.env.AXION_API_URL ?? 'https://api.dotsetlabs.com';
 
 /**
+ * Get headers with optional beta password for private beta access.
+ * Set DOTSET_BETA_PASSWORD env var to authenticate against beta API.
+ */
+function getBaseHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    const betaPassword = process.env.DOTSET_BETA_PASSWORD;
+    if (betaPassword) {
+        headers['X-Beta-Password'] = betaPassword;
+    }
+
+    return headers;
+}
+
+/**
  * API client configuration
  */
 export interface ClientConfig {
@@ -59,7 +76,7 @@ export function createClient(config: ClientConfig = {}) {
         const response = await fetch(url, {
             method,
             headers: {
-                'Content-Type': 'application/json',
+                ...getBaseHeaders(),
                 'Authorization': `Bearer ${token}`,
                 'X-Axion-Metadata': JSON.stringify(metadata),
             },
@@ -68,6 +85,9 @@ export function createClient(config: ClientConfig = {}) {
 
         if (!response.ok) {
             const error = (await response.json()) as ApiError;
+            if (response.status === 401 && (error as { code?: string }).code === 'BETA_ACCESS_REQUIRED') {
+                throw new Error('Beta access required. Set DOTSET_BETA_PASSWORD environment variable.');
+            }
             throw new Error(error.message || `API error: ${response.status}`);
         }
 
@@ -86,9 +106,7 @@ export function createClient(config: ClientConfig = {}) {
 
         const response = await fetch(url, {
             method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getBaseHeaders(),
             body: body ? JSON.stringify(body) : undefined,
         });
 
