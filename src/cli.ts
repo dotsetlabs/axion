@@ -52,6 +52,7 @@ import {
 } from './core/sync-config.js';
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, basename } from 'node:path';
+import { execSync } from 'node:child_process';
 
 const program = new Command();
 
@@ -430,7 +431,6 @@ program
             // If --with-gluon is enabled, wrap command with gln run
             if (options.withGluon) {
                 // Check if gluon is installed
-                const { execSync } = await import('node:child_process');
                 let gluonAvailable = false;
                 try {
                     execSync('gln --version', { stdio: 'ignore' });
