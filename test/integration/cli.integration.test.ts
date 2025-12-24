@@ -41,9 +41,9 @@ describe('CLI Integration Tests', () => {
 
             expect(result.exitCode).toBe(0);
             expect(result.all).toContain('Project initialized');
-            // Key is stored in .axion/key, manifest in .axion.env
-            expect(await project.exists('.axion/key')).toBe(true);
-            expect(await project.exists('.axion.env')).toBe(true);
+            // Key is stored in .dotset/axion/key, manifest in .dotset/axion/manifest.enc
+            expect(await project.exists('.dotset/axion/key')).toBe(true);
+            expect(await project.exists('.dotset/axion/manifest.enc')).toBe(true);
         });
 
         it('should prevent re-initialization', async () => {

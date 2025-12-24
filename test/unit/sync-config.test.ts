@@ -23,7 +23,7 @@ const TEST_DIR = join(process.cwd(), '.test-sync-config');
 describe('Sync Config', () => {
     beforeEach(async () => {
         await mkdir(TEST_DIR, { recursive: true });
-        await mkdir(join(TEST_DIR, '.axion'), { recursive: true });
+        await mkdir(join(TEST_DIR, '.dotset', 'axion'), { recursive: true });
     });
 
     afterEach(async () => {

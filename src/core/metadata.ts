@@ -22,7 +22,7 @@ const require = createRequire(import.meta.url);
 const pkg = require('../../package.json') as { version: string };
 
 /** Device ID file path */
-const DEVICE_ID_FILE = join(homedir(), '.axion', 'device-id');
+const DEVICE_ID_FILE = join(homedir(), '.dotset', 'axion', 'device-id');
 
 export interface DeviceMetadata {
     /** Unique device identifier (UUID v4) */
@@ -49,7 +49,7 @@ let cachedDeviceId: string | null = null;
 /**
  * Gets or generates a persistent, cryptographically random device ID
  *
- * The ID is stored in ~/.axion/device-id and persists across CLI invocations.
+ * The ID is stored in ~/.dotset/axion/device-id and persists across CLI invocations.
  * Uses crypto.randomUUID() for cryptographic uniqueness.
  *
  * @returns A UUID v4 string uniquely identifying this device
@@ -79,7 +79,7 @@ async function getDeviceId(): Promise<string> {
 
     try {
         // Persist the new ID
-        const dir = join(homedir(), '.axion');
+        const dir = join(homedir(), '.dotset', 'axion');
         await mkdir(dir, { recursive: true, mode: 0o700 });
         await writeFile(DEVICE_ID_FILE, newId, { encoding: 'utf8', mode: 0o600 });
         cachedDeviceId = newId;

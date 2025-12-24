@@ -1,7 +1,7 @@
 /**
  * Axion Manifest Manager
  *
- * Handles the encrypted manifest file (.axion.env) which stores
+ * Handles the encrypted manifest file (.dotset/axion/manifest.enc) which stores
  * environment variables organized by service.
  *
  * Manifest Structure:
@@ -36,13 +36,13 @@ import { parseEnvFile } from './parser.js';
 export const GLOBAL_SERVICE = '_global';
 
 /** Default manifest filename */
-export const MANIFEST_FILENAME = '.axion.env';
+export const MANIFEST_FILENAME = '.dotset/axion/manifest.enc';
 
 /** Key storage filename */
-export const KEY_FILENAME = '.axion/key';
+export const KEY_FILENAME = '.dotset/axion/key';
 
 /** Cache directory for push/pull simulation */
-export const CACHE_DIR = '.axion/cache';
+export const CACHE_DIR = '.dotset/axion/cache';
 
 /**
  * Service-scoped environment variables
@@ -182,18 +182,19 @@ export class ManifestManager {
             if (config) {
                 // Heartbeat Pulse (JIT)
                 try {
-                    await cloudClient.pulse(config.projectId);
+                    await cloudClient.pulse(config.projectId, { softError: true });
                 } catch (err) {
-                    if ((err as Error).message.includes('Heartbeat failed')) throw err;
-                    // Ignore network errors
+                    // Ignore all errors for background pulse
                 }
 
                 // Fetch latest manifest
                 try {
-                    const cloudData = await cloudClient.fetchManifest(config.projectId);
-                    const cloudEncrypted = deserializeEncrypted(cloudData.encryptedData);
-                    const cloudDecrypted = await decrypt(cloudEncrypted, key);
-                    cloudManifest = JSON.parse(cloudDecrypted) as Manifest;
+                    const cloudManifestData = await cloudClient.fetchManifest(config.projectId, { softError: true });
+                    if (cloudManifestData) {
+                        const cloudEncrypted = deserializeEncrypted(cloudManifestData.encryptedData);
+                        const cloudDecrypted = await decrypt(cloudEncrypted, key);
+                        cloudManifest = JSON.parse(cloudDecrypted) as Manifest;
+                    }
                 } catch {
                     // Ignore fetch error (offline fallback)
                 }
@@ -243,7 +244,7 @@ export class ManifestManager {
             const config = await loadCloudConfig(this.workDir);
             if (config) {
                 const fingerprint = await this.getFingerprint();
-                await cloudClient.uploadManifest(config.projectId, serialized, fingerprint);
+                await cloudClient.uploadManifest(config.projectId, serialized, fingerprint, { softError: true });
             }
         } catch {
             // Ignore cloud push errors (offline mode)
@@ -282,7 +283,7 @@ export class ManifestManager {
         const overrides = await this.loadLocalOverrides();
         // Applies to all services? Or just match by key?
         // Standard .env overrides usually flatten everything.
-        // For now, let's assume .axion.local keys override matching keys in the resolved scope.
+        // For now, let's assume .dotset/axion/local.env keys override matching keys in the resolved scope.
         // This effectively treats local overrides as global for the current process resolution.
         Object.assign(result, overrides);
 
@@ -439,11 +440,11 @@ export class ManifestManager {
     }
 
     /**
-     * Loads local overrides from .axion.local
+     * Loads local overrides from .dotset/axion/local.env
      * @returns Dictionary of local variable overrides
      */
     private async loadLocalOverrides(): Promise<ServiceVariables> {
-        const localPath = join(this.workDir, '.axion.local');
+        const localPath = join(this.workDir, '.dotset/axion/local.env');
         try {
             const content = await readFile(localPath, 'utf8');
             const result = parseEnvFile(content);
@@ -589,6 +590,9 @@ export class ManifestManager {
         let cloudManifest: Manifest;
         try {
             const cloudData = await cloudClient.fetchManifest(config.projectId);
+            if (!cloudData) {
+                throw new Error('Cloud manifest not found (project may be linked but uninitialized)');
+            }
             const cloudEncrypted = deserializeEncrypted(cloudData.encryptedData);
             const cloudDecrypted = await decrypt(cloudEncrypted, key);
             cloudManifest = JSON.parse(cloudDecrypted) as Manifest;

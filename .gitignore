@@ -1,5 +1,5 @@
 node_modules/
 dist/
-.axion/
+.dotset/
 *.log
 .DS_Store

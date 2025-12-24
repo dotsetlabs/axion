@@ -98,7 +98,7 @@ export interface CloudManifest {
 }
 
 /**
- * Local project configuration (stored in .axion/cloud.json)
+ * Local project configuration (stored in .dotset/axion/cloud.json)
  */
 export interface CloudConfig {
     projectId: string;

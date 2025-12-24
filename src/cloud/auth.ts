@@ -5,7 +5,7 @@
  * Credentials are stored securely in the user's home directory.
  *
  * Security:
- * - Tokens stored in ~/.axion/credentials (chmod 600)
+ * - Tokens stored in ~/.dotset/axion/credentials (chmod 600)
  * - Automatic token refresh before expiration
  * - Secure logout clears all local credentials
  */
@@ -17,13 +17,13 @@ import type { AuthTokens, User, CloudConfig } from './types.js';
 import { createClient } from './client.js';
 
 /** Directory for global Axion config */
-const CONFIG_DIR = join(homedir(), '.axion');
+const CONFIG_DIR = join(homedir(), '.dotset', 'axion');
 
 /** Credentials file path */
 const CREDENTIALS_FILE = join(CONFIG_DIR, 'credentials.json');
 
 /** Cloud config file (per-project, stored in project dir) */
-export const CLOUD_CONFIG_FILE = '.axion/cloud.json';
+export const CLOUD_CONFIG_FILE = '.dotset/axion/cloud.json';
 
 /**
  * Stored credentials structure
@@ -178,7 +178,7 @@ export async function saveCloudConfig(
     config: CloudConfig
 ): Promise<void> {
     const configPath = join(workDir, CLOUD_CONFIG_FILE);
-    const configDir = join(workDir, '.axion');
+    const configDir = join(workDir, '.dotset', 'axion');
     await mkdir(configDir, { recursive: true });
     await writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
 }

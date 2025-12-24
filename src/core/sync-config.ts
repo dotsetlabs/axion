@@ -1,12 +1,12 @@
 /**
  * Axion Sync Configuration
  *
- * Manages .axion/sync.yaml configuration and .env file discovery.
+ * Manages .dotset/axion/sync.yaml configuration and .env file discovery.
  * Provides a structured way to track which .env files should be
  * synchronized with Axion cloud.
  *
  * Features:
- * - Config file management (.axion/sync.yaml)
+ * - Config file management (.dotset/axion/sync.yaml)
  * - Auto-discovery of .env files in project
  * - Scope inference from filename patterns
  * - Support for monorepo structures with service scoping
@@ -17,7 +17,7 @@ import { join, relative, dirname } from 'node:path';
 import yaml from 'js-yaml';
 
 /** Sync config file location */
-export const SYNC_CONFIG_PATH = '.axion/sync.yaml';
+export const SYNC_CONFIG_PATH = '.dotset/axion/sync.yaml';
 
 /** Maximum directory depth for .env discovery */
 const MAX_DISCOVERY_DEPTH = 4;
@@ -33,7 +33,7 @@ const ENV_FILE_PATTERNS = [
 const SKIP_DIRECTORIES = new Set([
     'node_modules',
     '.git',
-    '.axion',
+    '.dotset',
     'dist',
     'build',
     'out',
@@ -60,7 +60,7 @@ export interface SyncFileEntry {
 }
 
 /**
- * Sync configuration structure (.axion/sync.yaml)
+ * Sync configuration structure (.dotset/axion/sync.yaml)
  */
 export interface SyncConfig {
     /** Config version for future compatibility */
@@ -96,7 +96,7 @@ export function createEmptySyncConfig(): SyncConfig {
 }
 
 /**
- * Loads the sync configuration from .axion/sync.yaml
+ * Loads the sync configuration from .dotset/axion/sync.yaml
  *
  * @param workDir - Working directory (defaults to cwd)
  * @returns SyncConfig or null if not found
@@ -124,7 +124,7 @@ export async function loadSyncConfig(workDir: string = process.cwd()): Promise<S
 }
 
 /**
- * Saves the sync configuration to .axion/sync.yaml
+ * Saves the sync configuration to .dotset/axion/sync.yaml
  *
  * @param config - SyncConfig to save
  * @param workDir - Working directory (defaults to cwd)

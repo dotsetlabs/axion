@@ -21,7 +21,7 @@
 
 import { Command } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
-import { ManifestManager, GLOBAL_SERVICE } from './core/manifest.js';
+import { ManifestManager, GLOBAL_SERVICE, MANIFEST_FILENAME } from './core/manifest.js';
 import { run } from './core/injector.js';
 import { parseEnvFile, isValidVariableName, isValidServiceName } from './core/parser.js';
 import { cloudClient } from './cloud/client.js';
@@ -52,7 +52,6 @@ import {
 } from './core/sync-config.js';
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, basename } from 'node:path';
-import { execSync } from 'node:child_process';
 
 const program = new Command();
 
@@ -111,14 +110,14 @@ program
     .action(async (options: { cloud?: boolean; name?: string }) => {
         try {
             if (await manifest.isInitialized()) {
-                error('Project already initialized. Delete .axion/ to reinitialize.');
+                error('Project already initialized. Delete .dotset/axion/ to reinitialize.');
             }
 
             const key = await manifest.init();
 
             success('Project initialized successfully!');
             console.log();
-            info('Your project key has been stored in .axion/key');
+            info('Your project key has been stored in .dotset/axion/key');
 
             // Create cloud project if requested
             if (options.cloud) {
@@ -130,7 +129,7 @@ program
                     console.log(`    ${colors.cyan('axn login')}`);
                     console.log();
                     console.log('  Then re-initialize with cloud support:');
-                    console.log(`    ${colors.cyan('rm -rf .axion && axn init --cloud --name ' + (options.name || basename(process.cwd())))}`);
+                    console.log(`    ${colors.cyan('rm -rf .dotset/axion && axn init --cloud --name ' + (options.name || basename(process.cwd())))}`);
                     console.log();
                     error('Cloud project creation requires authentication. Run "axn login" first.');
                 } else {
@@ -167,7 +166,7 @@ program
                 syncConfig.files = toSyncEntries(discovered);
                 await saveSyncConfig(syncConfig);
 
-                success(`Created .axion/sync.yaml with ${discovered.length} file(s)`);
+                success(`Created .dotset/axion/sync.yaml with ${discovered.length} file(s)`);
                 console.log();
                 console.log(colors.bold('📥 Next steps:'));
                 console.log('   1. Run', colors.cyan('axn sync'), 'to import your .env files');
@@ -189,8 +188,8 @@ program
             console.log();
             console.log(colors.yellow('⚠️  Important:'));
             console.log('   Add the following to your .gitignore:');
-            console.log(colors.dim('   .axion/'));
-            console.log(colors.dim('   .axion.env'));
+            console.log(colors.dim('   .dotset/'));
+            console.log(colors.dim(`   ${MANIFEST_FILENAME}`));
             console.log();
             console.log('   Back up your project key securely:');
             console.log(colors.bold(`   ${key}`));
@@ -407,7 +406,6 @@ program
     .description('Run a command with injected environment variables')
     .argument('<command...>', 'Command and arguments to run')
     .option('--scope <env>', 'Environment scope (development, staging, production)', 'development')
-    .option('--with-gluon', 'Enable Gluon runtime security monitoring')
     .allowUnknownOption()
     .action(async (commandArgs: string[], options) => {
         try {
@@ -422,33 +420,10 @@ program
             const vars = await manifest.getVariables(service, scope as any);
 
             // Separate the command from its arguments
-            let [command, ...args] = commandArgs;
+            const [command, ...args] = commandArgs;
 
             if (!command) {
                 error('No command specified. Usage: axn run -- <command>');
-            }
-
-            // If --with-gluon is enabled, wrap command with gln run
-            if (options.withGluon) {
-                // Check if gluon is installed
-                let gluonAvailable = false;
-                try {
-                    execSync('gln --version', { stdio: 'ignore' });
-                    gluonAvailable = true;
-                } catch {
-                    // gluon not installed
-                }
-
-                if (gluonAvailable) {
-                    info('Gluon runtime monitoring enabled');
-                    // Wrap: gln run -- <original command>
-                    args = ['run', '--', command, ...args];
-                    command = 'gln';
-                } else {
-                    console.log(colors.yellow('⚠ Gluon not installed. Install with: npm install -g @dotsetlabs/gluon'));
-                    console.log(colors.dim('  Continuing without Gluon monitoring...'));
-                    console.log();
-                }
             }
 
             // Run the command with injected environment
@@ -770,7 +745,7 @@ recovery
             const key = await decrypt(encryptedData, options.password);
 
             // Restore key directly to disk
-            const keyPath = join(process.cwd(), '.axion/key');
+            const keyPath = join(process.cwd(), '.dotset/axion/key');
             await mkdir(dirname(keyPath), { recursive: true });
             await writeFile(keyPath, key, 'utf8');
 
@@ -1248,7 +1223,7 @@ program
                 config.files = toSyncEntries(discovered);
 
                 await saveSyncConfig(config);
-                success(`Sync config saved to .axion/sync.yaml with ${config.files.length} file(s)`);
+                success(`Sync config saved to .dotset/axion/sync.yaml with ${config.files.length} file(s)`);
                 console.log();
                 info('Run "axn sync" to import these files into Axion.');
                 return;
@@ -1276,7 +1251,11 @@ program
                 info('Pulling from cloud...');
 
                 const cloudManifest = await cloudClient.fetchManifest(cloudConfig.projectId);
-                await writeFile('.axion.env', cloudManifest.encryptedData, 'utf8');
+                if (!cloudManifest) {
+                    error('Failed to pull manifest from cloud.');
+                }
+
+                await writeFile(MANIFEST_FILENAME, cloudManifest.encryptedData, 'utf8');
 
                 console.log();
                 success('Pulled from cloud!');
@@ -1290,7 +1269,7 @@ program
             if (options.push) {
                 info('Pushing to cloud...');
 
-                const encryptedData = await readFile('.axion.env', 'utf8');
+                const encryptedData = await readFile(MANIFEST_FILENAME, 'utf8');
                 const keyFingerprint = await manifest.getFingerprint();
 
                 const result = await cloudClient.uploadManifest(
@@ -1298,6 +1277,10 @@ program
                     encryptedData,
                     keyFingerprint
                 );
+
+                if (!result) {
+                    error('Failed to sync to cloud.');
+                }
 
                 console.log();
                 success('Synced to cloud!');
@@ -1322,11 +1305,11 @@ program
                 const enabledFiles = getEnabledFiles(syncConfig);
 
                 if (enabledFiles.length === 0) {
-                    info('No files enabled in .axion/sync.yaml');
+                    info('No files enabled in .dotset/axion/sync.yaml');
                     return;
                 }
 
-                info(`Syncing ${enabledFiles.length} file(s) from .axion/sync.yaml...`);
+                info(`Syncing ${enabledFiles.length} file(s) from .dotset/axion/sync.yaml...`);
                 console.log();
 
                 let totalVars = 0;
@@ -1344,7 +1327,7 @@ program
                 success(`Imported ${totalVars} variable(s) and synced to cloud.`);
             } else {
                 // No config - discover and prompt
-                info('No .axion/sync.yaml found. Discovering .env files...');
+                info('No .dotset/axion/sync.yaml found. Discovering .env files...');
                 const discovered = await discoverEnvFiles(process.cwd());
 
                 if (discovered.length === 0) {

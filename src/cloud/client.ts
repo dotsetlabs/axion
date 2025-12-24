@@ -62,36 +62,56 @@ export function createClient(config: ClientConfig = {}) {
     const apiUrl = config.apiUrl ?? DEFAULT_API_URL;
 
     /**
-     * Makes an authenticated API request
+     * Internal request handler with soft error support
+     */
+    async function _request<T>(
+        method: string,
+        path: string,
+        body?: unknown,
+        options: { softError?: boolean } = {}
+    ): Promise<T | null> {
+        const token = await getAccessToken();
+        const url = `${apiUrl}${path}`;
+        const metadata = await getDeviceMetadata();
+
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    ...getBaseHeaders(),
+                    'Authorization': `Bearer ${token}`,
+                    'X-Axion-Metadata': JSON.stringify(metadata),
+                },
+                body: body ? JSON.stringify(body) : undefined,
+            });
+
+            if (!response.ok) {
+                const error = (await response.json().catch(() => ({ message: response.statusText }))) as ApiError;
+                if (response.status === 401 && (error as { code?: string }).code === 'BETA_ACCESS_REQUIRED') {
+                    if (options.softError) return null;
+                    throw new Error('Beta access required. Set DOTSET_BETA_PASSWORD environment variable.');
+                }
+                if (options.softError) return null;
+                throw new Error(error.message || `API error: ${response.status}`);
+            }
+
+            return response.json() as Promise<T>;
+        } catch (err) {
+            if (options.softError) return null;
+            throw err;
+        }
+    }
+
+    /**
+     * Standard request handler (throws on error)
      */
     async function request<T>(
         method: string,
         path: string,
         body?: unknown
     ): Promise<T> {
-        const token = await getAccessToken();
-        const url = `${apiUrl}${path}`;
-        const metadata = await getDeviceMetadata();
-
-        const response = await fetch(url, {
-            method,
-            headers: {
-                ...getBaseHeaders(),
-                'Authorization': `Bearer ${token}`,
-                'X-Axion-Metadata': JSON.stringify(metadata),
-            },
-            body: body ? JSON.stringify(body) : undefined,
-        });
-
-        if (!response.ok) {
-            const error = (await response.json()) as ApiError;
-            if (response.status === 401 && (error as { code?: string }).code === 'BETA_ACCESS_REQUIRED') {
-                throw new Error('Beta access required. Set DOTSET_BETA_PASSWORD environment variable.');
-            }
-            throw new Error(error.message || `API error: ${response.status}`);
-        }
-
-        return response.json() as Promise<T>;
+        const result = await _request<T>(method, path, body);
+        return result!;
     }
 
     /**
@@ -119,6 +139,7 @@ export function createClient(config: ClientConfig = {}) {
     }
 
     return {
+        _request,
         /**
          * Initiates the Device Code Flow for CLI authentication (GitHub)
          * Returns the user code and verification URL to display
@@ -171,37 +192,39 @@ export function createClient(config: ClientConfig = {}) {
         },
 
         /**
-         * Creates a new project in the cloud
+         * Creates a new project in the cloud (with Axion enabled)
          */
         async createProject(name: string, keyFingerprint?: string): Promise<{ id: string; name: string }> {
-            return request<{ id: string; name: string }>('POST', '/axion/projects', { name, keyFingerprint });
+            return request<{ id: string; name: string }>('POST', '/projects', { name, axionEnabled: true, keyFingerprint });
         },
 
         /**
          * Sends a heartbeat pulse to the cloud
          * Returns a session token if access is granted (JIT)
          */
-        async pulse(projectId: string): Promise<string> {
-            const response = await request<{ token: string }>('POST', `/axion/projects/${projectId}/pulse`);
-            return response.token;
+        async pulse(projectId: string, options: { softError?: boolean } = {}): Promise<string | null> {
+            const response = await _request<{ token: string }>('POST', `/projects/${projectId}/axion/pulse`, undefined, options);
+            return response?.token ?? null;
         },
 
         /**
          * Checks if user has access to a project
          */
         async checkAccess(projectId: string): Promise<AccessCheckResult> {
-            return request<AccessCheckResult>('GET', `/axion/projects/${projectId}/access`);
+            return request<AccessCheckResult>('GET', `/projects/${projectId}/axion/access`);
         },
 
         /**
          * Fetches the encrypted manifest from cloud
          */
-        async fetchManifest(projectId: string): Promise<CloudManifest> {
-            const response = await request<SyncResponse>(
+        async fetchManifest(projectId: string, options: { softError?: boolean } = {}): Promise<CloudManifest | null> {
+            const response = await _request<SyncResponse>(
                 'GET',
-                `/axion/projects/${projectId}/manifest`
+                `/projects/${projectId}/axion/manifest`,
+                undefined,
+                options
             );
-            return response.manifest;
+            return response?.manifest ?? null;
         },
 
         /**
@@ -210,14 +233,16 @@ export function createClient(config: ClientConfig = {}) {
         async uploadManifest(
             projectId: string,
             encryptedData: string,
-            keyFingerprint: string
-        ): Promise<CloudManifest> {
-            const response = await request<SyncResponse>(
+            keyFingerprint: string,
+            options: { softError?: boolean } = {}
+        ): Promise<CloudManifest | null> {
+            const response = await _request<SyncResponse>(
                 'PUT',
-                `/axion/projects/${projectId}/manifest`,
-                { projectId, encryptedData, keyFingerprint } as SyncRequest
+                `/projects/${projectId}/axion/manifest`,
+                { projectId, encryptedData, keyFingerprint } as SyncRequest,
+                options
             );
-            return response.manifest;
+            return response?.manifest ?? null;
         },
 
         /**
@@ -231,42 +256,42 @@ export function createClient(config: ClientConfig = {}) {
          * Fetches audit logs for the project
          */
         async fetchAuditLogs(projectId: string): Promise<AuditLogEntry[]> {
-            return request<AuditLogEntry[]>('GET', `/axion/projects/${projectId}/audit`);
+            return request<AuditLogEntry[]>('GET', `/projects/${projectId}/axion/audit`);
         },
 
         /**
          * Fetches version history
          */
         async fetchHistory(projectId: string): Promise<CloudManifestHistory[]> {
-            return request<CloudManifestHistory[]>('GET', `/axion/projects/${projectId}/history`);
+            return request<CloudManifestHistory[]>('GET', `/projects/${projectId}/axion/history`);
         },
 
         /**
          * Rolls back to a specific version
          */
         async rollback(projectId: string, version: number): Promise<void> {
-            await request<{ success: boolean; newVersion: number }>('POST', `/axion/projects/${projectId}/rollback`, { version });
+            await request<{ success: boolean; newVersion: number }>('POST', `/projects/${projectId}/axion/rollback`, { version });
         },
 
         /**
          * Gets project members
          */
         async getMembers(projectId: string): Promise<{ id: string; userId: string; userEmail: string; role: string; revokedAt: string | null }[]> {
-            return request('GET', `/axion/projects/${projectId}/members`);
+            return request('GET', `/projects/${projectId}/members`);
         },
 
         /**
          * Adds a member to a project
          */
         async addMember(projectId: string, email: string, role: string = 'member'): Promise<{ id: string; userId: string; userEmail: string; role: string }> {
-            return request('POST', `/axion/projects/${projectId}/members`, { email, role });
+            return request('POST', `/projects/${projectId}/members`, { email, role });
         },
 
         /**
          * Revokes a member's access
          */
-        async revokeMember(projectId: string, userId: string): Promise<void> {
-            await request('PATCH', `/axion/projects/${projectId}/members/${userId}/revoke`);
+        async revokeMember(projectId: string, memberId: string): Promise<void> {
+            await request('DELETE', `/projects/${projectId}/members/${memberId}`);
         },
 
         // --- Service Tokens ---
@@ -280,7 +305,7 @@ export function createClient(config: ClientConfig = {}) {
             scopes: string[] = ['read'],
             expiresInDays?: number
         ): Promise<{ id: string; name: string; token: string; tokenPrefix: string; scopes: string[]; expiresAt: string | null }> {
-            return request('POST', `/axion/projects/${projectId}/tokens`, { name, scopes, expiresInDays });
+            return request('POST', `/projects/${projectId}/axion/tokens`, { name, scopes, expiresInDays });
         },
 
         /**
@@ -298,14 +323,14 @@ export function createClient(config: ClientConfig = {}) {
             createdAt: string;
             isActive: boolean;
         }[]> {
-            return request('GET', `/axion/projects/${projectId}/tokens`);
+            return request('GET', `/projects/${projectId}/axion/tokens`);
         },
 
         /**
          * Revokes a service token
          */
         async revokeToken(projectId: string, tokenId: string): Promise<void> {
-            await request('DELETE', `/axion/projects/${projectId}/tokens/${tokenId}`);
+            await request('DELETE', `/projects/${projectId}/axion/tokens/${tokenId}`);
         },
 
         /**
@@ -313,7 +338,7 @@ export function createClient(config: ClientConfig = {}) {
          */
         async exportSecrets(projectId: string, scope?: string): Promise<{ secrets: Record<string, string> }> {
             const params = scope ? `?scope=${scope}` : '';
-            return request('GET', `/axion/projects/${projectId}/secrets${params}`);
+            return request('GET', `/projects/${projectId}/axion/secrets${params}`);
         },
 
         // --- Project Management ---
@@ -331,18 +356,18 @@ export function createClient(config: ClientConfig = {}) {
                 manifests: number;
             };
         }> {
-            return request('DELETE', `/axion/projects/${projectId}`);
+            return request('DELETE', `/projects/${projectId}`);
         },
 
         /**
          * Updates a project (e.g. name or fingerprint)
          */
         async updateProject(projectId: string, updates: { name?: string; keyFingerprint?: string }): Promise<void> {
-            return request('PATCH', `/axion/projects/${projectId}`, updates);
+            return request('PATCH', `/projects/${projectId}`, updates);
         },
 
         /**
-         * Lists all projects the user has access to
+         * Lists all Axion-enabled projects the user has access to
          */
         async listProjects(): Promise<{
             id: string;
@@ -352,7 +377,7 @@ export function createClient(config: ClientConfig = {}) {
             createdAt: string;
             updatedAt: string;
         }[]> {
-            return request('GET', '/axion/projects');
+            return request('GET', '/projects?filter=axion');
         }
     };
 }

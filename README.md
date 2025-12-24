@@ -31,41 +31,31 @@ Or use directly with npx:
 npx @dotsetlabs/axion run -- npm start
 ```
 
-### 2. Sign in with SSO
+### 2. Initialize a project (local-first)
 
 ```bash
-axn login          # GitHub (default)
-axn login --google # Google
+axn init
 ```
 
-The CLI uses OAuth Device Code Flow — you'll see a code to enter in your browser.
+This creates:
+- `.dotset/axion/` — Project configuration directory
+- `.dotset/axion/key` — Your encryption key (keep this safe!)
+- `.dotset/axion/manifest.enc` — Encrypted secrets store
 
-### 3. Initialize a project
+### 3. Add secrets
 
-```bash
-axn init --cloud --name "my-project"
-```
-
-This automatically:
-- Creates an encrypted vault for your secrets
-- Discovers existing `.env` files in your project
-- Creates `.axion/sync.yaml` to track them
-- Links to Axion Cloud
-
-### 4. Add secrets
-
-**Import from existing .env files:**
-```bash
-axn sync
-```
-
-**Or add secrets manually:**
+**Add secrets manually:**
 ```bash
 axn set DATABASE_URL "postgres://..."
 axn set API_KEY "sk-12345" --scope production
 ```
 
-### 5. Run your app with secrets
+**Or import from existing .env files:**
+```bash
+axn sync
+```
+
+### 4. Run your app with secrets
 
 ```bash
 axn run -- npm start
@@ -74,11 +64,19 @@ axn run --scope production -- node dist/index.js
 
 Axion fetches encrypted secrets, decrypts them in memory, and spawns your process with them injected into `process.env`.
 
+### 5. Enable cloud sync (optional)
+
+```bash
+axn login           # Authenticate with GitHub/Google
+axn init --cloud    # Create cloud project and link
+axn push            # Sync manifest to cloud
+```
+
 ## Deployment (CI/CD)
 
 ### On Render / Vercel / Railway / Heroku
 
-1. **Create a Service Token** in the [Axion dashboard](https://dotsetlabs.com/axion) under your project settings.
+1. **Create a Service Token** in the [Axion dashboard](https://dotsetlabs.com) under your project settings.
 
 2. **Set the environment variable** in your cloud provider:
    ```
@@ -183,7 +181,7 @@ Axion auto-discovers and syncs your .env files:
 # Discover .env files in your project
 axn sync --discover
 
-# Set up sync config (.axion/sync.yaml)
+# Set up sync config (.dotset/axion/sync.yaml)
 axn sync --init
 
 # Sync all configured files
@@ -203,7 +201,7 @@ apps/web/.env       → service: web
 packages/lib/.env   → service: lib
 ```
 
-### Sync Config (.axion/sync.yaml)
+### Sync Config (.dotset/axion/sync.yaml)
 
 ```yaml
 version: "1"
@@ -225,14 +223,14 @@ Axion employs a **client-side zero-knowledge architecture** with **OWASP #1 reco
 |:----------|:---------------|
 | **Encryption** | AES-256-GCM (authenticated encryption) |
 | **Key Derivation** | Argon2id (64 MiB memory, 3 iterations, 4 parallelism) |
-| **Project Key** | 128-bit random key (stored in `.axion/key` with chmod 600) |
+| **Project Key** | 128-bit random key (stored in `.dotset/axion/key` with chmod 600) |
 | **Salt** | 256-bit random salt per encryption |
 | **IV** | 128-bit random IV per encryption |
 | **Format** | Versioned encryption format for future algorithm upgrades |
 
 **How it works:**
 
-1. Your **Project Key** is generated locally and stored in `.axion/key`
+1. Your **Project Key** is generated locally and stored in `.dotset/axion/key`
 2. Secrets are encrypted using **AES-256-GCM** before leaving your machine
 3. Axion Cloud stores **only the encrypted ciphertext**
 4. Decryption happens locally — we cannot read your secrets
@@ -284,24 +282,6 @@ validation:
 | **Webhooks** | — | — | ✓ |
 | **Support** | Community | Email | Priority email |
 
-## Gluon Integration
-
-Monitor for secret leaks at runtime with [@dotsetlabs/gluon](https://github.com/dotsetlabs/gluon):
-
-```bash
-npm install -g @dotsetlabs/gluon
-
-# Run with Gluon monitoring enabled
-axn run --with-gluon -- npm start
-```
-
-> **Axion protects your secrets at rest. Gluon watches them in motion.**
-
-| Product | Role |
-|:--------|:-----|
-| **Axion** | Encrypts and injects secrets into process.env |
-| **Gluon** | Monitors stdout/stderr for accidental leaks |
-
 ## License
 
 MIT
@@ -309,4 +289,6 @@ MIT
 ## Related Projects
 
 - [@dotsetlabs/gluon](https://github.com/dotsetlabs/gluon) — Runtime Security Telemetry
+- [@dotsetlabs/tachyon](https://github.com/dotsetlabs/tachyon) — Zero-Trust Tunnels for Teams
+- [@dotsetlabs/cli](https://github.com/dotsetlabs/cli) — Unified CLI for all products
 - [dotset labs](https://dotsetlabs.com) — Developer tools for security, performance, and DX

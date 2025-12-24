@@ -22,13 +22,15 @@ describe('Config Module', () => {
             expect(config).toBeNull();
         });
 
-        it('should load axion.config.yaml', async () => {
+        it('should load .dotset/axion/config.yaml', async () => {
             const yaml = `
 project_id: test-project
 validation:
   DB_URL: ^postgres://
 `;
-            await writeFile(join(workDir, 'axion.config.yaml'), yaml);
+            const configDir = join(workDir, '.dotset/axion');
+            await mkdir(configDir, { recursive: true });
+            await writeFile(join(configDir, 'config.yaml'), yaml);
             const config = await loadConfig(workDir);
             expect(config?.project_id).toBe('test-project');
             expect(config?.validation?.DB_URL).toBe('^postgres://');

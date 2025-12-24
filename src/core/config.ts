@@ -1,7 +1,7 @@
 /**
  * Axion Project Configuration
  *
- * Loads and validates project-level configuration from axion.config.yaml.
+ * Loads and validates project-level configuration from .dotset/axion/config.yaml.
  * Supports protected keys, validation patterns, and heartbeat enforcement.
  */
 
@@ -26,7 +26,7 @@ export interface AxionConfig {
 }
 
 /** Config filename */
-export const CONFIG_FILENAME = 'axion.config.yaml';
+export const CONFIG_FILENAME = '.dotset/axion/config.yaml';
 
 /**
  * Loads the project configuration

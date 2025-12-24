@@ -22,11 +22,11 @@ describe('Manifest Sync Logic', () => {
         // Setup test directory
         if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true, force: true });
         await mkdir(TEST_DIR, { recursive: true });
-        await mkdir(join(TEST_DIR, '.axion'), { recursive: true });
+        await mkdir(join(TEST_DIR, '.dotset', 'axion'), { recursive: true });
 
         // Generate key
         projectKey = generateProjectKey();
-        await writeFile(join(TEST_DIR, '.axion/key'), projectKey);
+        await writeFile(join(TEST_DIR, '.dotset/axion/key'), projectKey);
 
         manager = new ManifestManager({ workDir: TEST_DIR });
 
@@ -47,7 +47,7 @@ describe('Manifest Sync Logic', () => {
             version: 2, // Logical version number
         };
         const localEncrypted = serializeEncrypted(await encrypt(JSON.stringify(localManifest), projectKey));
-        await writeFile(join(TEST_DIR, '.axion.env'), localEncrypted);
+        await writeFile(join(TEST_DIR, '.dotset', 'axion', 'manifest.enc'), localEncrypted);
 
         // 2. Mock CLOUD manifest (Version 1 - Stale)
         const cloudManifest = {
@@ -76,7 +76,7 @@ describe('Manifest Sync Logic', () => {
             version: 1,
         };
         const localEncrypted = serializeEncrypted(await encrypt(JSON.stringify(localManifest), projectKey));
-        await writeFile(join(TEST_DIR, '.axion.env'), localEncrypted);
+        await writeFile(join(TEST_DIR, '.dotset', 'axion', 'manifest.enc'), localEncrypted);
 
         // 2. Mock CLOUD manifest (Version 3 - Newer)
         const cloudManifest = {
