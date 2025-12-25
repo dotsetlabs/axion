@@ -9,6 +9,10 @@
       "types": "./dist/cli.d.ts",
       "import": "./dist/cli.js"
     },
+    "./sdk": {
+      "types": "./dist/sdk.d.ts",
+      "import": "./dist/sdk.js"
+    },
     "./crypto": {
       "types": "./dist/core/crypto.d.ts",
       "import": "./dist/core/crypto.js"
@@ -20,6 +24,14 @@
     "./injector": {
       "types": "./dist/core/injector.d.ts",
       "import": "./dist/core/injector.js"
+    },
+    "./config": {
+      "types": "./dist/core/config.d.ts",
+      "import": "./dist/core/config.js"
+    },
+    "./parser": {
+      "types": "./dist/core/parser.d.ts",
+      "import": "./dist/core/parser.js"
     }
   },
   "bin": {

@@ -112,7 +112,7 @@ describe('ManifestManager', () => {
 
         it('should throw for missing references', async () => {
             await manifestManager.setVariable('KEY', '@ref:MISSING_VAR');
-            await expect(manifestManager.getVariables()).rejects.toThrow('Reference @ref:MISSING_VAR not found');
+            await expect(manifestManager.getVariables()).rejects.toThrow('Referenced key "MISSING_VAR" not found');
         });
     });
 

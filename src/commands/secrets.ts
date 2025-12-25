@@ -3,6 +3,7 @@ import { colors, success, error, info } from '../utils/ui.js';
 import { ManifestManager, GLOBAL_SERVICE } from '../core/manifest.js';
 import { isValidVariableName, isValidServiceName } from '../core/parser.js';
 import { loadConfig, isProtected } from '../core/config.js';
+import { validateJson, hasTemplates, extractReferences } from '../core/templates.js';
 
 export function registerSecretsCommands(program: Command) {
     const manifest = new ManifestManager();
@@ -16,7 +17,8 @@ export function registerSecretsCommands(program: Command) {
         .description('Set an environment variable')
         .option('--scope <env>', 'Environment scope (development, staging, production)')
         .option('--force', 'Suppress overwrite warning')
-        .action(async (key: string, value: string, options: { scope?: string; force?: boolean }) => {
+        .option('--json', 'Validate value as JSON before storing')
+        .action(async (key: string, value: string, options: { scope?: string; force?: boolean; json?: boolean }) => {
             try {
                 const opts = program.opts();
                 const service = opts.service ?? GLOBAL_SERVICE;
@@ -35,6 +37,22 @@ export function registerSecretsCommands(program: Command) {
                 // Validate scope
                 if (scope && !['development', 'staging', 'production'].includes(scope)) {
                     error('Invalid scope. Must be one of: development, staging, production');
+                }
+
+                // Validate JSON if --json flag is set
+                if (options.json) {
+                    const parsed = validateJson(value);
+                    if (parsed === null) {
+                        error(`Invalid JSON value. Please provide valid JSON.`);
+                        return;
+                    }
+                    info(`Validated JSON: ${typeof parsed === 'object' ? (Array.isArray(parsed) ? 'array' : 'object') : typeof parsed}`);
+                }
+
+                // Show template references if present
+                if (hasTemplates(value)) {
+                    const refs = extractReferences(value);
+                    info(`Contains template references: ${refs.map(r => `{{${r}}}`).join(', ')}`);
                 }
 
                 // Check if key already exists and warn

@@ -31,6 +31,7 @@ import { cloudClient } from '../cloud/client.js';
 import { loadCloudConfig } from '../cloud/auth.js';
 import { loadConfig, validateSecret } from './config.js';
 import { parseEnvFile } from './parser.js';
+import { resolveTemplates } from './templates.js';
 
 /** Reserved service name for global variables */
 export const GLOBAL_SERVICE = '_global';
@@ -287,65 +288,9 @@ export class ManifestManager {
         // This effectively treats local overrides as global for the current process resolution.
         Object.assign(result, overrides);
 
-        // 6. Resolve Secret References (@ref:KEY syntax)
-        return this.resolveReferences(result);
-    }
-
-    /**
-     * Resolves @ref:KEY references to their actual values
-     *
-     * Supports:
-     * - @ref:KEY - Reference another secret
-     * - Circular reference detection
-     *
-     * Example:
-     *   axn set DATABASE_URL "postgres://..."
-     *   axn set API_DATABASE_URL "@ref:DATABASE_URL"
-     */
-    private resolveReferences(vars: ServiceVariables): ServiceVariables {
-        const result: ServiceVariables = { ...vars };
-        const refRegex = /@ref:([A-Za-z0-9_]+)/g;
-        const resolving = new Set<string>();
-        const resolved = new Set<string>();
-
-        const resolveValue = (key: string, value: string): string => {
-            if (typeof value !== 'string') return value;
-
-            // Circular reference check
-            if (resolving.has(key)) {
-                throw new Error(`Circular reference detected: ${key}`);
-            }
-
-            resolving.add(key);
-
-            const resolvedValue = value.replace(refRegex, (match, refKey) => {
-                // Check if referenced key exists in original vars
-                if (!(refKey in vars)) {
-                    throw new Error(`Reference @ref:${refKey} not found (used in ${key})`);
-                }
-
-                // If the referenced key itself needs resolution, do it
-                if (vars[refKey].includes('@ref:') && !resolved.has(refKey)) {
-                    return resolveValue(refKey, vars[refKey]);
-                }
-
-                return result[refKey] || vars[refKey];
-            });
-
-            resolving.delete(key);
-            result[key] = resolvedValue;
-            resolved.add(key);
-            return resolvedValue;
-        };
-
-        // Resolve all references
-        for (const key of Object.keys(vars)) {
-            if (!resolved.has(key)) {
-                resolveValue(key, vars[key]);
-            }
-        }
-
-        return result;
+        // 6. Resolve Secret References and Templates
+        // Supports both legacy @ref:KEY and new {{KEY}} syntax
+        return resolveTemplates(result);
     }
 
 
