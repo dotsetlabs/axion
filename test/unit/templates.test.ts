@@ -12,7 +12,7 @@ import {
     isJsonValue,
     CircularReferenceError,
     MissingReferenceError,
-} from '../../src/core/templates.js';
+} from '../../src/templates.js';
 
 describe('Templates', () => {
     describe('resolveTemplates', () => {

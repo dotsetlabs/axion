@@ -14,7 +14,7 @@
 
 import { readFile, writeFile, access, readdir } from 'node:fs/promises';
 import { join, relative, dirname } from 'node:path';
-import yaml from 'js-yaml';
+import yaml from 'yaml';
 
 /** Sync config file location */
 export const SYNC_CONFIG_PATH = '.dotset/axion/sync.yaml';
@@ -107,7 +107,7 @@ export async function loadSyncConfig(workDir: string = process.cwd()): Promise<S
     try {
         await access(configPath);
         const content = await readFile(configPath, 'utf8');
-        const config = yaml.load(content) as SyncConfig;
+        const config = yaml.parse(content) as SyncConfig;
 
         // Validate version
         if (config.version !== '1') {
@@ -134,7 +134,7 @@ export async function saveSyncConfig(
     workDir: string = process.cwd()
 ): Promise<void> {
     const configPath = join(workDir, SYNC_CONFIG_PATH);
-    const yamlContent = yaml.dump(config, { indent: 2 });
+    const yamlContent = yaml.stringify(config, { indent: 2 });
     await writeFile(configPath, yamlContent, 'utf8');
 }
 

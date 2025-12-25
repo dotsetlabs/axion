@@ -7,7 +7,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import yaml from 'js-yaml';
+import yaml from 'yaml';
 
 /**
  * Axion Project Configuration
@@ -35,7 +35,7 @@ export async function loadConfig(workDir: string = process.cwd()): Promise<Axion
     const configPath = join(workDir, CONFIG_FILENAME);
     try {
         const content = await readFile(configPath, 'utf8');
-        return yaml.load(content) as AxionConfig;
+        return yaml.parse(content) as AxionConfig;
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
             return null;

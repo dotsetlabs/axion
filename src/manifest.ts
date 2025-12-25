@@ -27,8 +27,6 @@ import {
     generateProjectKey,
     getKeyFingerprint,
 } from './crypto.js';
-import { cloudClient } from '../cloud/client.js';
-import { loadCloudConfig } from '../cloud/auth.js';
 import { loadConfig, validateSecret } from './config.js';
 import { parseEnvFile } from './parser.js';
 import { resolveTemplates } from './templates.js';
@@ -155,81 +153,26 @@ export class ManifestManager {
     }
 
     /**
-     * Loads and decrypts the manifest
-     * Supports "Zero-Disk" mode by fetching directly from cloud if linked.
+     * Loads and decrypts the manifest from local disk
      */
     async load(): Promise<Manifest> {
         const key = await this.getKey();
 
-        let localManifest: Manifest | null = null;
-        let cloudManifest: Manifest | null = null;
-
-        // 1. Try to load and decrypt local manifest
         try {
             const encrypted = await readFile(this.manifestPath, 'utf8');
             const encryptedData = deserializeEncrypted(encrypted);
             const decrypted = await decrypt(encryptedData, key);
-            localManifest = JSON.parse(decrypted) as Manifest;
+            return JSON.parse(decrypted) as Manifest;
         } catch (error) {
-            // Ignore if file doesn't exist (ENOENT)
-            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-                console.warn(`Warning: Failed to load local manifest: ${(error as Error).message}`);
+            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+                return createEmptyManifest();
             }
+            throw new Error(`Failed to load manifest: ${(error as Error).message}`);
         }
-
-        // 2. Try to fetch and decrypt cloud manifest
-        try {
-            const config = await loadCloudConfig(this.workDir);
-            if (config) {
-                // Heartbeat Pulse (JIT)
-                try {
-                    await cloudClient.pulse(config.projectId, { softError: true });
-                } catch (err) {
-                    // Ignore all errors for background pulse
-                }
-
-                // Fetch latest manifest
-                try {
-                    const cloudManifestData = await cloudClient.fetchManifest(config.projectId, { softError: true });
-                    if (cloudManifestData) {
-                        const cloudEncrypted = deserializeEncrypted(cloudManifestData.encryptedData);
-                        const cloudDecrypted = await decrypt(cloudEncrypted, key);
-                        cloudManifest = JSON.parse(cloudDecrypted) as Manifest;
-                    }
-                } catch {
-                    // Ignore fetch error (offline fallback)
-                }
-            }
-        } catch {
-            // Ignore config loading errors
-        }
-
-        // 3. Resolution Logic
-        if (localManifest && cloudManifest) {
-            // Both exist: use the one with higher version
-            if (localManifest.version > cloudManifest.version) {
-                return localManifest;
-            } else if (cloudManifest.version > localManifest.version) {
-                return cloudManifest;
-            } else {
-                // Same version: prefer cloud as source of truth, but they should be identical
-                return cloudManifest;
-            }
-        } else if (localManifest) {
-            // Only local exists
-            return localManifest;
-        } else if (cloudManifest) {
-            // Only cloud exists
-            return cloudManifest;
-        }
-
-        // 4. Default: New Empty Manifest
-        return createEmptyManifest();
     }
 
     /**
-     * Encrypts and saves the manifest
-     * Automatically pushes to cloud if linked.
+     * Encrypts and saves the manifest to local disk
      */
     async save(manifest: Manifest): Promise<void> {
         const key = await this.getKey();
@@ -237,21 +180,7 @@ export class ManifestManager {
         const encrypted = await encrypt(plaintext, key);
         const serialized = serializeEncrypted(encrypted);
 
-        // 1. Save to Disk (Offline cache/backup)
         await writeFile(this.manifestPath, serialized, 'utf8');
-
-        // 2. Push to Cloud (Auto-Sync)
-        try {
-            const config = await loadCloudConfig(this.workDir);
-            if (config) {
-                const fingerprint = await this.getFingerprint();
-                await cloudClient.uploadManifest(config.projectId, serialized, fingerprint, { softError: true });
-            }
-        } catch {
-            // Ignore cloud push errors (offline mode)
-            // User will be warned by CLI if explicit sync fails,
-            // but for implicit saves we fail silently to cache.
-        }
     }
 
     /**
@@ -282,10 +211,8 @@ export class ManifestManager {
 
         // 5. Merge Local Overrides (Highest Priority)
         const overrides = await this.loadLocalOverrides();
-        // Applies to all services? Or just match by key?
-        // Standard .env overrides usually flatten everything.
-        // For now, let's assume .dotset/axion/local.env keys override matching keys in the resolved scope.
-        // This effectively treats local overrides as global for the current process resolution.
+        // Local environment overrides (.dotset/axion/local.env) take priority
+        // over all other settings to allow for machine-specific configuration.
         Object.assign(result, overrides);
 
         // 6. Resolve Secret References and Templates
@@ -518,34 +445,23 @@ export class ManifestManager {
      * - Secrets only in cloud (not pulled locally)
      * - Secrets with different values
      *
+     * @param cloudManifest - The cloud manifest to compare against (optional)
      * @returns DriftResult with all differences
      */
-    async detectDrift(): Promise<DriftResult> {
-        const config = await loadCloudConfig(this.workDir);
-        if (!config) {
-            throw new Error('Project not linked to cloud. Run "axn link <project-id>" first.');
+    async detectDrift(cloudManifest?: Manifest): Promise<DriftResult> {
+        const localManifest = await this.load();
+
+        // If no cloud manifest provided, return local-only comparison
+        if (!cloudManifest) {
+            return {
+                hasDrift: false,
+                localOnly: [],
+                cloudOnly: [],
+                modified: [],
+                summary: { total: 0, added: 0, removed: 0, changed: 0 },
+            };
         }
 
-        const key = await this.getKey();
-
-        // 1. Load local manifest (disk only, bypass cloud fetch)
-        const localManifest = await this.loadLocal();
-
-        // 2. Fetch cloud manifest
-        let cloudManifest: Manifest;
-        try {
-            const cloudData = await cloudClient.fetchManifest(config.projectId);
-            if (!cloudData) {
-                throw new Error('Cloud manifest not found (project may be linked but uninitialized)');
-            }
-            const cloudEncrypted = deserializeEncrypted(cloudData.encryptedData);
-            const cloudDecrypted = await decrypt(cloudEncrypted, key);
-            cloudManifest = JSON.parse(cloudDecrypted) as Manifest;
-        } catch (error) {
-            throw new Error(`Failed to fetch cloud manifest: ${(error as Error).message}`);
-        }
-
-        // 3. Compare manifests
         return this.compareManifests(localManifest, cloudManifest);
     }
 

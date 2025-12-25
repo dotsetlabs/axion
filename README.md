@@ -1,41 +1,82 @@
 # @dotsetlabs/axion
 
-**The Zero-Disk Secret Plane.**  
-Stop syncing `.env` files. Stream encrypted secrets directly to your app's memory.
+**Secrets Module for the dotset Platform.**  
+Zero-disk encrypted secrets injected directly into process memory.
 
 [![npm version](https://img.shields.io/npm/v/@dotsetlabs/axion)](https://www.npmjs.com/package/@dotsetlabs/axion)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Documentation
+## Installation
 
-Full documentation is available at [docs.dotsetlabs.com](https://docs.dotsetlabs.com/axion/quickstart).
+### CLI Usage
 
-## Features
+Install the unified CLI to use Axion via command line:
 
-- **Zero-Disk Architecture** — Secrets are injected into `process.env` at runtime. No `.env` files on disk.
-- **End-to-End Encryption** — Secrets are encrypted using AES-256-GCM before reaching the cloud.
-- **Native SDK** — Use the SDK for serverless and programmatic access.
-- **Secret Templating** — Reference secrets inside other secrets with `{{KEY}}` syntax.
-- **Cloud Sync** — Securely share secrets with your team.
+```bash
+npm install -g @dotsetlabs/cli
+```
+
+### SDK Usage
+
+Install the SDK package for programmatic access:
+
+```bash
+npm install @dotsetlabs/axion
+```
 
 ## Quick Start
 
+### With CLI
+
 ```bash
-npm install -g @dotsetlabs/axion
-
-# Initialize local manifest
-axn init
-
-# Set a secret
-axn set DATABASE_URL "postgres://localhost/db"
-
-# Run your app
-axn run -- npm start
+dotset init --axion
+dotset secrets set API_KEY "sk-..."
+dotset run -- npm start
 ```
 
-## Security
+### With SDK
 
-Axion employs a client-side zero-knowledge architecture with industry-standard cryptography. For more details, see our [Security Documentation](https://docs.dotsetlabs.com/axion/security).
+```typescript
+import { loadSecrets, getSecret } from '@dotsetlabs/axion/sdk';
+
+// Load all secrets into process.env
+await loadSecrets({ scope: 'production' });
+
+// Or access directly
+const apiKey = await getSecret('API_KEY', { scope: 'production' });
+```
+
+## Features
+
+- **Zero-Disk Architecture** — Secrets exist only in memory at runtime
+- **AES-256-GCM Encryption** — Industry-standard authenticated encryption
+- **Argon2id Key Derivation** — OWASP-recommended memory-hard KDF
+- **Secret Templating** — Reference secrets with `{{KEY}}` syntax
+- **Cloud Sync** — Securely share secrets across your team
+- **Scope Support** — Separate development, staging, and production
+
+## SDK Exports
+
+```typescript
+// Main SDK
+import { loadSecrets, getSecret, getSecrets, createClient } from '@dotsetlabs/axion/sdk';
+
+// Low-level modules
+import { ManifestManager } from '@dotsetlabs/axion/manifest';
+import { encrypt, decrypt } from '@dotsetlabs/axion/crypto';
+import { parseEnvFile } from '@dotsetlabs/axion/parser';
+```
+
+## Documentation
+
+Full documentation: [docs.dotsetlabs.com/axion](https://docs.dotsetlabs.com/axion/quickstart)
+
+## Part of the dotset Platform
+
+Axion is the Secrets module of the dotset developer platform:
+- **Axion** — Zero-disk encrypted secrets *(this package)*
+- **Gluon** — Runtime security telemetry
+- **Tachyon** — Zero-trust dev tunnels
 
 ## License
 

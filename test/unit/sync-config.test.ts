@@ -16,7 +16,7 @@ import {
     getEnabledFiles,
     formatDiscoveredFiles,
     mergeDiscoveredFiles,
-} from '../../src/core/sync-config.js';
+} from '../../src/sync-config.js';
 
 const TEST_DIR = join(process.cwd(), '.test-sync-config');
 

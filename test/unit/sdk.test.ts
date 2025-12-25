@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { ManifestManager } from '../../src/core/manifest.js';
+import { ManifestManager } from '../../src/manifest.js';
 import {
     loadSecrets,
     getSecret,

@@ -29,7 +29,7 @@
  * ```
  */
 
-import { ManifestManager, GLOBAL_SERVICE } from './core/manifest.js';
+import { ManifestManager, GLOBAL_SERVICE } from './manifest.js';
 
 // ============================================
 // Types

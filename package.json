@@ -1,46 +1,47 @@
 {
   "name": "@dotsetlabs/axion",
   "version": "1.0.0",
-  "description": "The Zero-Disk Secret Plane. Secure secrets management for developers.",
+  "description": "Secrets SDK for the dotset platform. Zero-disk encrypted secrets with AES-256-GCM.",
   "type": "module",
-  "main": "dist/cli.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/cli.d.ts",
-      "import": "./dist/cli.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./sdk": {
       "types": "./dist/sdk.d.ts",
       "import": "./dist/sdk.js"
     },
     "./crypto": {
-      "types": "./dist/core/crypto.d.ts",
-      "import": "./dist/core/crypto.js"
+      "types": "./dist/crypto.d.ts",
+      "import": "./dist/crypto.js"
     },
     "./manifest": {
-      "types": "./dist/core/manifest.d.ts",
-      "import": "./dist/core/manifest.js"
+      "types": "./dist/manifest.d.ts",
+      "import": "./dist/manifest.js"
     },
     "./injector": {
-      "types": "./dist/core/injector.d.ts",
-      "import": "./dist/core/injector.js"
+      "types": "./dist/injector.d.ts",
+      "import": "./dist/injector.js"
     },
     "./config": {
-      "types": "./dist/core/config.d.ts",
-      "import": "./dist/core/config.js"
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
     },
     "./parser": {
-      "types": "./dist/core/parser.d.ts",
-      "import": "./dist/core/parser.js"
+      "types": "./dist/parser.d.ts",
+      "import": "./dist/parser.js"
+    },
+    "./templates": {
+      "types": "./dist/templates.d.ts",
+      "import": "./dist/templates.js"
     }
-  },
-  "bin": {
-    "axn": "./bin/axn.js"
   },
   "files": [
     "dist",
     "!dist/**/*.test.*",
-    "bin",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -48,24 +49,20 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:all": "npm test && npm run test:integration",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
+    "dotset",
+    "secrets",
+    "encryption",
     "environment",
     "env",
-    "dotenv",
-    "cli",
-    "secrets",
-    "configuration",
-    "microservices",
-    "encryption",
-    "security"
+    "security",
+    "sdk",
+    "library"
   ],
   "author": "dotset labs <hello@dotsetlabs.com>",
   "license": "MIT",
@@ -76,20 +73,17 @@
   "bugs": {
     "url": "https://github.com/dotsetlabs/axion/issues"
   },
-  "homepage": "https://dotsetlabs.com/axion",
+  "homepage": "https://dotsetlabs.com",
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
     "argon2": "^0.44.0",
-    "commander": "^12.1.0",
-    "js-yaml": "^4.1.1"
+    "yaml": "^2.3.4"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.2",
-    "execa": "^8.0.1",
-    "tsx": "^4.21.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

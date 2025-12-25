@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { run, inject } from '../../src/core/injector.js';
+import { run, inject } from '../../src/injector.js';
 import * as child_process from 'node:child_process';
 
 vi.mock('node:child_process');
