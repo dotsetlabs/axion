@@ -76,6 +76,7 @@ Full documentation: [docs.dotsetlabs.com/axion](https://docs.dotsetlabs.com/axio
 Axion is the Secrets module of the dotset developer platform:
 - **Axion** — Zero-disk encrypted secrets *(this package)*
 - **Gluon** — Runtime security telemetry
+- **Hadron** — Local CI runner
 - **Tachyon** — Zero-trust dev tunnels
 
 ## License
