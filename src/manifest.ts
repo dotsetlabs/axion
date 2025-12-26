@@ -91,6 +91,8 @@ export interface ManifestManagerOptions {
     workDir?: string;
     /** Custom manifest filename */
     manifestFile?: string;
+    /** Injected encryption key (overrides file-based key) */
+    encryptionKey?: string;
 }
 
 /**
@@ -101,18 +103,31 @@ export class ManifestManager {
     private readonly manifestPath: string;
     private readonly keyPath: string;
     private readonly cachePath: string;
+    private readonly encryptionKey?: string;
 
     constructor(options: ManifestManagerOptions = {}) {
         this.workDir = options.workDir ?? process.cwd();
+        // Base manifest path - now used as a template
         this.manifestPath = join(this.workDir, options.manifestFile ?? MANIFEST_FILENAME);
         this.keyPath = join(this.workDir, KEY_FILENAME);
         this.cachePath = join(this.workDir, CACHE_DIR);
+        this.encryptionKey = options.encryptionKey;
+    }
+
+    /**
+     * Gets the path for a specific scoped manifest
+     */
+    public getScopedManifestPath(scope: string = 'development'): string {
+        const dir = dirname(this.manifestPath);
+        const filename = scope === 'development' ? 'manifest.enc' : `${scope}.enc`;
+        return join(dir, filename);
     }
 
     /**
      * Checks if the project has been initialized
      */
     async isInitialized(): Promise<boolean> {
+        if (this.encryptionKey) return true;
         try {
             await access(this.keyPath);
             return true;
@@ -143,6 +158,9 @@ export class ManifestManager {
      * Reads the project encryption key
      */
     private async getKey(): Promise<string> {
+        if (this.encryptionKey) {
+            return this.encryptionKey;
+        }
         try {
             return (await readFile(this.keyPath, 'utf8')).trim();
         } catch {
@@ -155,11 +173,12 @@ export class ManifestManager {
     /**
      * Loads and decrypts the manifest from local disk
      */
-    async load(): Promise<Manifest> {
+    async load(scope: string = 'development'): Promise<Manifest> {
         const key = await this.getKey();
+        const path = this.getScopedManifestPath(scope);
 
         try {
-            const encrypted = await readFile(this.manifestPath, 'utf8');
+            const encrypted = await readFile(path, 'utf8');
             const encryptedData = deserializeEncrypted(encrypted);
             const decrypted = await decrypt(encryptedData, key);
             return JSON.parse(decrypted) as Manifest;
@@ -167,20 +186,23 @@ export class ManifestManager {
             if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
                 return createEmptyManifest();
             }
-            throw new Error(`Failed to load manifest: ${(error as Error).message}`);
+            throw new Error(`Failed to load manifest [${scope}]: ${(error as Error).message}`);
         }
     }
 
     /**
      * Encrypts and saves the manifest to local disk
      */
-    async save(manifest: Manifest): Promise<void> {
+    async save(manifest: Manifest, scope: string = 'development'): Promise<void> {
         const key = await this.getKey();
+        const path = this.getScopedManifestPath(scope);
         const plaintext = JSON.stringify(manifest, null, 2);
         const encrypted = await encrypt(plaintext, key);
         const serialized = serializeEncrypted(encrypted);
 
-        await writeFile(this.manifestPath, serialized, 'utf8');
+        const dir = dirname(path);
+        await mkdir(dir, { recursive: true });
+        await writeFile(path, serialized, 'utf8');
     }
 
     /**
@@ -188,7 +210,7 @@ export class ManifestManager {
      * Merges default values with scope-specific overrides
      */
     async getVariables(service: string = GLOBAL_SERVICE, scope: 'development' | 'staging' | 'production' = 'development'): Promise<ServiceVariables> {
-        const manifest = await this.load();
+        const manifest = await this.load(scope);
         const result: ServiceVariables = {};
 
         // 1. Merge Global Defaults
@@ -229,65 +251,50 @@ export class ManifestManager {
      * @param service - Service to scope the variable to (defaults to _global)
      * @param scope - Environment scope (optional, updates default if omitted)
      */
-    async setVariable(key: string, value: string, service: string = GLOBAL_SERVICE, scope?: 'development' | 'staging' | 'production'): Promise<void> {
+    async setVariable(key: string, value: string, service: string = GLOBAL_SERVICE, scope: 'development' | 'staging' | 'production' = 'development'): Promise<void> {
         // 1. Load Config & Validate
         const config = await loadConfig(this.workDir);
         validateSecret(key, value, config);
 
-        // 2. Load Manifest
-        const manifest = await this.load();
+        // 2. Load Manifest for the scope
+        const manifest = await this.load(scope);
 
         if (scope) {
-            // Update scope-specific override
-            if (!manifest.scopes) manifest.scopes = { development: {}, staging: {}, production: {} };
-            if (!manifest.scopes[scope]) manifest.scopes[scope] = {};
-            if (!manifest.scopes[scope]![service]) manifest.scopes[scope]![service] = {};
-
-            manifest.scopes[scope]![service][key] = value;
-        } else {
-            // Update default service variable
+            // Update default service variables within the scoped manifest
+            // In the new scoped model, each scope has its own manifest.
             if (!manifest.services[service]) {
                 manifest.services[service] = {};
             }
             manifest.services[service][key] = value;
         }
 
-        await this.save(manifest);
+        await this.save(manifest, scope);
     }
 
     /**
      * Removes an environment variable from the manifest
      */
-    async removeVariable(key: string, service: string = GLOBAL_SERVICE, scope?: 'development' | 'staging' | 'production'): Promise<boolean> {
-        const manifest = await this.load();
+    async removeVariable(key: string, service: string = GLOBAL_SERVICE, scope: 'development' | 'staging' | 'production' = 'development'): Promise<boolean> {
+        const manifest = await this.load(scope);
         let changed = false;
 
-        if (scope) {
-            // Remove from scope override
-            if (manifest.scopes?.[scope]?.[service] && key in manifest.scopes[scope]![service]) {
-                delete manifest.scopes[scope]![service][key];
-                changed = true;
-            }
-        } else {
-            // Remove from default service
-            if (manifest.services[service] && key in manifest.services[service]) {
-                delete manifest.services[service][key];
-                changed = true;
-            }
+        if (manifest.services[service] && key in manifest.services[service]) {
+            delete manifest.services[service][key];
+            changed = true;
         }
 
         if (changed) {
-            await this.save(manifest);
+            await this.save(manifest, scope);
             return true;
         }
         return false;
     }
 
     /**
-     * Lists all services in the manifest
+     * Lists all services in the manifest for a specific scope
      */
-    async listServices(): Promise<string[]> {
-        const manifest = await this.load();
+    async listServices(scope: string = 'development'): Promise<string[]> {
+        const manifest = await this.load(scope);
         return Object.keys(manifest.services);
     }
 
@@ -438,18 +445,10 @@ export class ManifestManager {
     }
 
     /**
-     * Detects drift between local and cloud manifests
-     *
-     * Compares secrets to identify:
-     * - Secrets only in local (not pushed to cloud)
-     * - Secrets only in cloud (not pulled locally)
-     * - Secrets with different values
-     *
-     * @param cloudManifest - The cloud manifest to compare against (optional)
-     * @returns DriftResult with all differences
+     * Detects drift between local and cloud manifests for a specific scope
      */
-    async detectDrift(cloudManifest?: Manifest): Promise<DriftResult> {
-        const localManifest = await this.load();
+    async detectDrift(cloudManifest?: Manifest, scope: string = 'development'): Promise<DriftResult> {
+        const localManifest = await this.load(scope);
 
         // If no cloud manifest provided, return local-only comparison
         if (!cloudManifest) {

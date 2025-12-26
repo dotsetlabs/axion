@@ -47,13 +47,14 @@ const apiKey = await getSecret('API_KEY', { scope: 'production' });
 ```
 
 ## Features
-
-- **Zero-Disk Architecture** — Secrets exist only in memory at runtime
+- **Project-Level RBAC** — Control access based on user role and environment
+- **Zero-Disk Architecture** — Secrets exist only in memory at runtime; keys are fetched dynamically
+- **Envelope Encryption** — Cryptographically isolated keys for Development, Staging, and Production
 - **AES-256-GCM Encryption** — Industry-standard authenticated encryption
 - **Argon2id Key Derivation** — OWASP-recommended memory-hard KDF
 - **Secret Templating** — Reference secrets with `{{KEY}}` syntax
 - **Cloud Sync** — Securely share secrets across your team
-- **Scope Support** — Separate development, staging, and production
+- **Dynamic Key Injection** — `dotset run` fetches only the keys you are permitted to access
 
 ## SDK Exports
 
