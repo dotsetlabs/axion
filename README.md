@@ -47,14 +47,14 @@ const apiKey = await getSecret('API_KEY', { scope: 'production' });
 ```
 
 ## Features
-- **Project-Level RBAC** — Control access based on user role and environment
-- **Zero-Disk Architecture** — Secrets exist only in memory at runtime; keys are fetched dynamically
-- **Envelope Encryption** — Cryptographically isolated keys for Development, Staging, and Production
+- **Project-Level RBAC** — Control access with Owner, Admin, Member, and Readonly roles
+- **Environment Scopes** — Cryptographically isolated access for Development, Staging, and Production
+- **Zero-Disk Architecture** — Secrets exist only in memory; keys are fetched dynamically based on scope
+- **Tamper-Proof Audit** — SHA-256 hash chain audit logs covering all secret access
 - **AES-256-GCM Encryption** — Industry-standard authenticated encryption
-- **Argon2id Key Derivation** — OWASP-recommended memory-hard KDF
 - **Secret Templating** — Reference secrets with `{{KEY}}` syntax
-- **Cloud Sync** — Securely share secrets across your team
-- **Dynamic Key Injection** — `dotset run` fetches only the keys you are permitted to access
+- **Cloud Sync** — Securely share secrets across your team with drift detection
+- **Dynamic Key Injection** — `dotset run` fetches only the keys permitted for the current user and scope
 
 ## SDK Exports
 
