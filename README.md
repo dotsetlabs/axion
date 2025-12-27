@@ -29,7 +29,7 @@ npm install @dotsetlabs/axion
 ### With CLI
 
 ```bash
-dotset init --axion
+dotset init
 dotset secrets set API_KEY "sk-..."
 dotset run -- npm start
 ```
@@ -78,7 +78,7 @@ Axion is the Secrets module of the dotset developer platform:
 - **Axion** — Zero-disk encrypted secrets *(this package)*
 - **Gluon** — Runtime security telemetry
 - **Hadron** — Local CI runner
-- **Tachyon** — Zero-trust dev tunnels
+- **Lagrangian** — Instant crash replay
 
 ## License
 
